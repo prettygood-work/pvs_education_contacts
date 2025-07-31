@@ -8,7 +8,11 @@
       "Bash(npx tsc:*)",
       "Bash(git add:*)",
       "Bash(git rm:*)",
-      "Bash(true)"
+      "Bash(true)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm view:*)"
     ],
     "deny": []
   }

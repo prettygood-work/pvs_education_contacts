@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  scraper:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: pvs-scraper
+    env_file:
+      - .env.production
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+    volumes:
+      - ./output:/app/output
+      - ./logs:/app/logs
+      - ./data:/app/data:ro
+    restart: no
+    mem_limit: 4g
+    cpus: '2.0'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Optional: Run with specific command
+  scraper-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: pvs-scraper-migrate
+    env_file:
+      - .env.production
+    command: ["node", "dist/scripts/migrateDistrictsToFirestore.js"]
+    restart: no
+    profiles:
+      - migrate

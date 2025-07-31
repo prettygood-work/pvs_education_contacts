@@ -2,11 +2,18 @@
 
 ## Current Issues
 
-### Security Vulnerability
-- **Issue**: npm audit reports 1 high severity vulnerability
-- **Impact**: Potential security risk
-- **Action**: Run `npm audit fix` or investigate specific vulnerability
-- **Priority**: High
+### Security Vulnerability - xlsx package
+- **Issue**: xlsx package has 2 high severity vulnerabilities (Prototype Pollution, ReDoS)
+- **Impact**: Potential security risk when parsing untrusted Excel files
+- **Mitigation**: Since we only parse our own trusted CDE Excel file, risk is minimal
+- **Action**: Consider alternative libraries (exceljs, node-xlsx) or accept risk
+- **Priority**: Medium (only parsing trusted files)
+
+### Robots.txt Compliance Removed
+- **Issue**: Robots.txt compliance checking has been removed per requirements
+- **Impact**: Scraper will not check robots.txt before accessing pages
+- **Action**: Ensure ethical scraping through rate limiting only
+- **Priority**: N/A - Intentional design decision
 
 ### Type Definitions
 - **Issue**: Some libraries may lack complete TypeScript definitions

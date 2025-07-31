@@ -8,6 +8,11 @@ import { EmailVerifier } from './processors/emailVerifier';
 import { PDFProcessor } from './processors/pdfProcessor';
 import { CSVExporter } from './utils/csvExporter';
 import * as firebase from './utils/firebase';
+import { RateLimiter } from './utils/rateLimiter';
+import { ProgressTracker } from './utils/progressTracker';
+import { withRetry, RetryConfigs } from './utils/retryHelper';
+import logger, { logDistrictStart, logDistrictComplete, logDistrictError, logScraperEvent } from './utils/logger';
+import { TemplateMatcher } from './scrapers/templateMatcher';
 
 export class Orchestrator {
   private readonly scraper: PlaywrightScraper;
@@ -16,6 +21,9 @@ export class Orchestrator {
   private readonly pdfProcessor: PDFProcessor;
   private readonly csvExporter: CSVExporter;
   private readonly limit: any;
+  private readonly rateLimiter: RateLimiter;
+  private readonly templateMatcher: TemplateMatcher;
+  private progressTracker!: ProgressTracker;
   private startTime: number = 0;
 
   constructor() {
@@ -25,17 +33,20 @@ export class Orchestrator {
     this.pdfProcessor = new PDFProcessor();
     this.csvExporter = new CSVExporter();
     this.limit = pLimit(config.scraper.maxConcurrent);
+    this.rateLimiter = new RateLimiter(30, 0.5); // 30 requests burst, 0.5/sec average
+    this.templateMatcher = new TemplateMatcher();
   }
 
   async initialize(): Promise<void> {
-    console.log('Initializing orchestrator...');
+    logger.info('Initializing orchestrator...');
     await this.scraper.initialize();
     await this.pdfProcessor.initialize();
-    firebase.initializeFirebase();
+    const db = firebase.initializeFirebase();
+    this.progressTracker = new ProgressTracker(db);
   }
 
   async cleanup(): Promise<void> {
-    console.log('Cleaning up resources...');
+    logger.info('Cleaning up resources...');
     await this.scraper.close();
     await this.pdfProcessor.terminate();
   }
@@ -47,24 +58,43 @@ export class Orchestrator {
       await this.initialize();
       
       const districts = await this.loadOrGetDistricts();
-      console.log(`Processing ${districts.length} districts...`);
+      logger.info(`Processing ${districts.length} districts...`);
+      logScraperEvent('run_started', { totalDistricts: districts.length });
+      
+      // Initialize progress tracking
+      await this.progressTracker.initializeRun(districts.length);
+      
+      // Check for resume capability
+      const unprocessedIds = await this.progressTracker.getUnprocessedDistricts();
+      const districtsToProcess = districts.filter(d => unprocessedIds.includes(d.id));
+      
+      if (districtsToProcess.length < districts.length) {
+        logger.info(`Resuming from previous run. ${districts.length - districtsToProcess.length} already processed.`);
+      }
       
       const batchSize = 50;
-      for (let i = 0; i < districts.length; i += batchSize) {
-        const batch = districts.slice(i, i + batchSize);
+      for (let i = 0; i < districtsToProcess.length; i += batchSize) {
+        const batch = districtsToProcess.slice(i, i + batchSize);
         await this.processBatch(batch);
         
-        const stats = await firebase.getProcessingStats();
-        console.log(`Progress: ${stats.completed}/${stats.total} completed, ${stats.failed} failed`);
+        const progress = await this.progressTracker.getProgress();
+        if (progress) {
+          logger.info(`Progress: ${progress.stats.completed}/${progress.stats.total} completed, ${progress.stats.failed} failed`);
+        }
         
-        if (i + batchSize < districts.length) {
-          console.log('Pausing between batches...');
+        if (i + batchSize < districtsToProcess.length) {
+          logger.debug('Pausing between batches...');
           await new Promise(resolve => setTimeout(resolve, 5000));
         }
       }
       
+      await this.progressTracker.completeRun();
       await this.exportResults();
       
+    } catch (error) {
+      logger.error('Fatal error in orchestrator', error);
+      await this.progressTracker.failRun(error instanceof Error ? error.message : String(error));
+      throw error;
     } finally {
       await this.cleanup();
     }
@@ -99,17 +129,32 @@ export class Orchestrator {
   }
 
   private async processDistrict(district: District): Promise<void> {
-    console.log(`Processing ${district.name}...`);
+    const districtStartTime = Date.now();
+    logDistrictStart(district.id, district.name);
     
     try {
+      // Check if already processed in this run
+      if (await this.progressTracker.isDistrictProcessed(district.id)) {
+        logger.info(`Skipping already processed district: ${district.name}`);
+        return;
+      }
+      
+      await this.progressTracker.startDistrict(district);
       await firebase.updateDistrictStatus(district.id, 'processing');
+      
+      // Apply rate limiting
+      await this.rateLimiter.waitForToken(district.website);
       
       const domain = this.emailGenerator.extractDomainFromWebsite(district.website);
       let contacts: Contact[] = [];
       
       if (district.website) {
         try {
-          contacts = await this.scraper.scrapeDistrict(district);
+          // Scrape with retry logic
+          contacts = await withRetry(
+            async () => await this.scraper.scrapeDistrict(district),
+            RetryConfigs.network
+          );
         } catch (error: any) {
           if (error.message === 'CAPTCHA_DETECTED') {
             console.log(`CAPTCHA detected for ${district.name}, using department emails`);
@@ -206,14 +251,30 @@ export class Orchestrator {
         scrapedAt: new Date()
       };
       
-      await firebase.saveDistrictContacts(districtContacts);
+      await withRetry(
+        async () => await firebase.saveDistrictContacts(districtContacts),
+        RetryConfigs.database
+      );
+      
       await firebase.updateDistrictStatus(district.id, 'completed');
       
-      console.log(`Completed ${district.name}: ${contacts.length} contacts found`);
+      const duration = Date.now() - districtStartTime;
+      await this.progressTracker.completeDistrict(district, contacts.length, {
+        domain,
+        verifiedEmails: contacts.filter(c => c.emailStatus === 'verified').length,
+        generatedEmails: contacts.filter(c => c.emailStatus === 'generated').length,
+      });
+      
+      logDistrictComplete(district.id, district.name, contacts.length, duration);
       
     } catch (error: any) {
-      console.error(`Failed to process ${district.name}:`, error.message);
-      await firebase.updateDistrictStatus(district.id, 'failed', error.message);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logDistrictError(district.id, district.name, error);
+      
+      await this.progressTracker.failDistrict(district, errorMessage);
+      await firebase.updateDistrictStatus(district.id, 'failed', errorMessage);
+      
+      // Don't throw - continue with next district
     }
   }
 

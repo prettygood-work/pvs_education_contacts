@@ -9,19 +9,33 @@
     "scrape": "tsx src/scrape.ts",
     "test": "tsx tests/test.ts",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist output/*.csv"
+    "clean": "rm -rf dist output/*.csv",
+    "migrate-districts": "tsx src/scripts/migrateDistrictsToFirestore.ts",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^24.1.0",
     "@types/pdf-parse": "^1.1.5",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
+    "eslint": "^9.32.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.3",
+    "jest": "^30.0.5",
+    "prettier": "^3.6.2",
+    "ts-jest": "^29.4.0",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@types/winston": "^2.4.4",
     "csv-writer": "^1.6.0",
     "dotenv": "^17.2.1",
     "firebase-admin": "^13.4.0",
@@ -32,6 +46,7 @@
     "playwright-extra": "^4.3.6",
     "playwright-extra-plugin-stealth": "^0.0.1",
     "tesseract.js": "^6.0.1",
+    "winston": "^3.17.0",
     "xlsx": "^0.18.5"
   }
 }
