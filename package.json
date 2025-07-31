@@ -1,0 +1,37 @@
+{
+  "name": "pvs_education_contacts",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/scrape.ts",
+    "load-districts": "tsx src/loadDistricts.ts",
+    "scrape": "tsx src/scrape.ts",
+    "test": "tsx tests/test.ts",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist output/*.csv"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^24.1.0",
+    "@types/pdf-parse": "^1.1.5",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "csv-writer": "^1.6.0",
+    "dotenv": "^17.2.1",
+    "firebase-admin": "^13.4.0",
+    "mailauth": "^4.8.6",
+    "p-limit": "^6.2.0",
+    "pdf-parse": "^1.1.1",
+    "playwright": "^1.54.1",
+    "playwright-extra": "^4.3.6",
+    "playwright-extra-plugin-stealth": "^0.0.1",
+    "tesseract.js": "^6.0.1",
+    "xlsx": "^0.18.5"
+  }
+}
