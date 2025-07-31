@@ -1,9 +1,8 @@
-import { chromium } from 'playwright-extra';
-import StealthPlugin from 'playwright-extra-plugin-stealth';
+import { chromium } from 'playwright';
 import { Contact, District, ScraperOptions } from '../types';
 import { config } from '../config';
 
-chromium.use(StealthPlugin());
+// Note: Playwright has built-in stealth features
 
 export class PlaywrightScraper {
   private browser: any = null;
@@ -22,7 +21,12 @@ export class PlaywrightScraper {
       headless: this.options.headless,
       args: [
         '--disable-blink-features=AutomationControlled',
-        '--disable-features=IsolateOrigins,site-per-process'
+        '--disable-features=IsolateOrigins,site-per-process',
+        '--disable-dev-shm-usage',
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-accelerated-2d-canvas',
+        '--disable-gpu'
       ]
     });
   }
@@ -41,7 +45,16 @@ export class PlaywrightScraper {
 
     const context = await this.browser.newContext({
       viewport: { width: 1920, height: 1080 },
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      ignoreHTTPSErrors: true,
+      javaScriptEnabled: true,
+      bypassCSP: true,
+      locale: 'en-US',
+      timezoneId: 'America/Los_Angeles',
+      permissions: [],
+      extraHTTPHeaders: {
+        'Accept-Language': 'en-US,en;q=0.9'
+      }
     });
 
     try {

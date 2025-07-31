@@ -12,7 +12,7 @@ import { RateLimiter } from './utils/rateLimiter';
 import { ProgressTracker } from './utils/progressTracker';
 import { withRetry, RetryConfigs } from './utils/retryHelper';
 import logger, { logDistrictStart, logDistrictComplete, logDistrictError, logScraperEvent } from './utils/logger';
-import { TemplateMatcher } from './scrapers/templateMatcher';
+// import { TemplateMatcher } from './scrapers/templateMatcher'; // TODO: Integrate template matching
 
 export class Orchestrator {
   private readonly scraper: PlaywrightScraper;
@@ -22,7 +22,7 @@ export class Orchestrator {
   private readonly csvExporter: CSVExporter;
   private readonly limit: any;
   private readonly rateLimiter: RateLimiter;
-  private readonly templateMatcher: TemplateMatcher;
+  // private readonly templateMatcher: TemplateMatcher; // TODO: Integrate template matching
   private progressTracker!: ProgressTracker;
   private startTime: number = 0;
 
@@ -34,7 +34,7 @@ export class Orchestrator {
     this.csvExporter = new CSVExporter();
     this.limit = pLimit(config.scraper.maxConcurrent);
     this.rateLimiter = new RateLimiter(30, 0.5); // 30 requests burst, 0.5/sec average
-    this.templateMatcher = new TemplateMatcher();
+    // this.templateMatcher = new TemplateMatcher(); // TODO: Integrate template matching
   }
 
   async initialize(): Promise<void> {

@@ -8,17 +8,20 @@ A one-time data collection tool for extracting contact information from Californ
 # 1. Clone and install
 npm install
 
-# 2. Set up environment
+# 2. Install Playwright browsers
+npx playwright install chromium
+
+# 3. Set up environment
 cp .env.example .env
 # Edit .env with your Firebase credentials
 
-# 3. Download CDE data
+# 4. Download CDE data
 # Place pubschls.xlsx in the data/ directory
 
-# 4. Load districts
+# 5. Load districts
 npm run load-districts
 
-# 5. Run scraper
+# 6. Run scraper
 npm run scrape
 ```
 

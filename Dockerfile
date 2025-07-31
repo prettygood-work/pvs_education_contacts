@@ -1,5 +1,6 @@
 # Use Node.js 18 Alpine for smaller image size
-FROM node:18-alpine AS base
+# Using latest LTS version with security patches
+FROM node:18-alpine3.20 AS base
 
 # Install dependencies for Playwright and Tesseract
 RUN apk add --no-cache \

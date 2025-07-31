@@ -12,7 +12,8 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(npm audit:*)",
-      "Bash(npm view:*)"
+      "Bash(npm view:*)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": []
   }
