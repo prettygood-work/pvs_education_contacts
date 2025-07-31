@@ -40,7 +40,7 @@ export class EmailGenerator {
       }
     }
     
-    return [...new Set(emails)];
+    return Array.from(new Set(emails));
   }
 
   generateDepartmentEmails(domain: string): string[] {
@@ -92,7 +92,7 @@ export class EmailGenerator {
     let mostCommonPattern: string | null = null;
     let maxCount = 0;
     
-    for (const [pattern, count] of patternCounts) {
+    for (const [pattern, count] of Array.from(patternCounts.entries())) {
       if (count > maxCount) {
         mostCommonPattern = pattern;
         maxCount = count;

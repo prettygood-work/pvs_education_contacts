@@ -1,5 +1,5 @@
-import pdfParse from 'pdf-parse';
-import Tesseract from 'tesseract.js';
+import pdfParse = require('pdf-parse');
+import * as Tesseract from 'tesseract.js';
 import { Contact, PDFProcessingResult } from '../types';
 import * as fs from 'fs/promises';
 import * as path from 'path';

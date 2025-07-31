@@ -120,7 +120,7 @@ export class PlaywrightScraper {
         }
       });
       
-      return [...new Set(relevantLinks)];
+      return Array.from(new Set(relevantLinks));
     });
 
     return links;
