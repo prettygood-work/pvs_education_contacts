@@ -1,5 +1,9 @@
+import * as dotenv from 'dotenv';
 import { EmailGenerator } from '../src/processors/emailGenerator';
 import { Contact } from '../src/types';
+
+// Load environment variables
+dotenv.config();
 
 async function testEmailGenerator() {
   console.log('Testing Email Generator...');
