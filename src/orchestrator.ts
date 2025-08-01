@@ -111,7 +111,13 @@ export class Orchestrator {
       return districts;
     }
     
-    return firebase.getPendingDistricts();
+    // Check for test limit
+    const testLimit = process.env.TEST_LIMIT ? parseInt(process.env.TEST_LIMIT) : undefined;
+    if (testLimit) {
+      console.log(`Testing with limited districts: ${testLimit}`);
+    }
+    
+    return firebase.getPendingDistricts(testLimit);
   }
 
   private async processBatch(districts: District[]): Promise<void> {
